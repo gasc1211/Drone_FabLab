@@ -1,0 +1,6 @@
+{
+  "port": "COM8",
+  "board": "arduino:avr:uno",
+  "sketch": "Drone\\main\\main.ino",
+  "programmer": "avrisp"
+}
