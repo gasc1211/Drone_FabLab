@@ -28,7 +28,7 @@ Servo Motor4;
 
 // RF Receiver Setup
 #define CE_PIN 8
-#define CSN_PIN 10
+#define CSN_PIN 9
 
 RF24 Transmitter(CE_PIN, CSN_PIN);
 const byte address[6] = "00001";
@@ -84,13 +84,13 @@ void loop() {
 
     // TODO: Setup calibration for sensors  
 
-    // Serial.print("Roll: ");
-    // Serial.print(RateRoll);
-    // Serial.print(" Pitch: ");
-    // Serial.print(RatePitch);
-    // Serial.print(" Yaw: ");
-    // Serial.print(RateRoll);
-    // Serial.println();
+    Serial.print("Roll: ");
+    Serial.print(RateRoll);
+    Serial.print(" Pitch: ");
+    Serial.print(RatePitch);
+    Serial.print(" Yaw: ");
+    Serial.print(RateRoll);
+    Serial.println();
 
     // Serial.print("Accelerometer Readings: ");
     // Serial.print("X: ");
@@ -141,12 +141,20 @@ void loop() {
     // MotorInput3 = 0;
     // MotorInput4 = 0;
 
+    Serial.print("Received values: ");
+    Serial.print(" Roll: ");
+    Serial.print(inputs[0]);
+    Serial.print(" Pitch: ");
+    Serial.print(inputs[1]);
+    Serial.print(" Yaw: ");
+    Serial.print(inputs[2]);
+    Serial.println();
 
-    // Send speed signal to motors
-    Motor1.writeMicroseconds(inputs[3]);
-    Motor2.writeMicroseconds(inputs[3]);
-    Motor3.writeMicroseconds(inputs[3]);
-    Motor4.writeMicroseconds(inputs[3]);
+    // // Send speed signal to motors
+    // Motor1.writeMicroseconds(inputs[3]);
+    // Motor2.writeMicroseconds(inputs[3]);
+    // Motor3.writeMicroseconds(inputs[3]);
+    // Motor4.writeMicroseconds(inputs[3]);
 
     // Setup a 250Hz Closed Control Loop
     delay(400);
