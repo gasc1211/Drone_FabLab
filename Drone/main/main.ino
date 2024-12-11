@@ -9,17 +9,16 @@
 #include <nRF24L01.h>
 #include <RF24.h>
 
-// Setup Motors
+// Setup Motors (Labeled counterclockwise from the lower right corner of the drone)
+#define  MOTOR1_PIN 3   // Motor 1
+#define  MOTOR2_PIN 4   // Motor 2
+#define  MOTOR3_PIN 5   // Motor 3
+#define  MOTOR4_PIN 6   // Motor 4
 
-#define  MOTOR1_PIN 7
-#define  MOTOR2_PIN 6
-#define  MOTOR3_PIN 5
-#define  MOTOR4_PIN 4
-
-#define MOTOR_POWER_INTERVAL 120
+#define MOTOR_POWER_INTERVAL 10
 #define MIN_MOTOR_SPEED 1000
-#define MAX_MOTOR_SPEED 2000
-#define IDLE_MOTOR_SPEED 1180
+#define MAX_MOTOR_SPEED 1150
+#define IDLE_MOTOR_SPEED 1050
 
 Servo Motor1;
 Servo Motor2;
@@ -27,8 +26,8 @@ Servo Motor3;
 Servo Motor4;
 
 // RF Receiver Setup
-#define CE_PIN 8
-#define CSN_PIN 9
+#define CE_PIN 7
+#define CSN_PIN 8
 
 RF24 Transmitter(CE_PIN, CSN_PIN);
 const byte address[6] = "00001";
@@ -37,13 +36,22 @@ const byte address[6] = "00001";
 Adafruit_MPU6050 Sensors;
 
 // Define mpu6050 variables
-float RatePitch, RateRoll, RateYaw;
-// float RateCalibrationPitch, RateCalibrationRoll, RateCalibrationYaw;
-// float RateCalibrationNumber;
-
-// Define motors throttle input
 float MotorInput1, MotorInput2, MotorInput3, MotorInput4;
-float MotorSpeed1, MotorSpeed2, MotorSpeed3, MotorSpeed4;
+// float MotorSpeed1, MotorSpeed2, MotorSpeed3, MotorSpeed4;
+
+// Differential Term Variables
+float ErrorRatePitch, ErrorRateRoll, ErrorRateYaw;
+float RatePitch, RateRoll, RateYaw;
+float DesiredRatePitch, DesiredRateRoll, DesiredRateYaw;
+
+// Calibration variables
+float RateCalibrationPitch, RateCalibrationRoll, RateCalibrationYaw;
+float RateCalibrationNumber;
+
+// Define motor individual movement input
+float PitchInput1, PitchInput2, PitchInput3, PitchInput4;
+float RollInput1, RollInput2, RollInput3, RollInput4;
+float YawInput1, YawInput2, YawInput3, YawInput4;
 
 void setup() {
 
@@ -68,7 +76,6 @@ void setup() {
     Motor3.attach(MOTOR3_PIN, 1000, 2000);
     Motor4.attach(MOTOR4_PIN, 1000, 2000);
     delay(500);
-
 }
 
 void loop() {
@@ -105,56 +112,57 @@ void loop() {
     // Serial.print(temp.temperature);
     // Serial.println("°C");
 
-    // Receive signal from controller
-    // uint16_t receivedValues[] = { 0, 0, 0, 0, 0, 0 };
-    // uint16_t signals[] = { 0, 0, 0, 0, 0, 0 };
+    /// PID Controller 
 
-    // Roll, Pitch and Yaw inputs
-    float receivedValues[] = { 0, 0, 0, 0 };
-    float inputs[] = { 0, 0, 0, 0 };
+    // Roll, Pitch, Yaw and Throttle inputs
+    int16_t receivedValues[] = { 0, 0, 0, 0 };
+    int16_t inputs[] = { 0, 0, 0, 0 };
 
     if (Transmitter.available()) {
         Transmitter.read(&receivedValues, sizeof(receivedValues));
 
         // Check for idle state
-        if (receivedValues == inputs) {
-            for (int i = 0; i < sizeof(receivedValues) / sizeof(float); i++) {
-                inputs[i] = IDLE_MOTOR_SPEED;
-            }
-        }
+        // if (receivedValues == inputs) {
+        //     for (int i = 0; i < sizeof(receivedValues) / sizeof(int16_t); i++) {
+        //         inputs[i] = IDLE_MOTOR_SPEED;
+        //     }
+        // }
         // Update motor speeds based on inputs
-        else {
-            for (int i = 0; i < sizeof(receivedValues) / sizeof(float); i++) {
-                // signals[i] = map(receivedValues[i], 512, 1024, MIN_MOTOR_SPEED, MAX_MOTOR_SPEED);
-                inputs[i] = map(fabs(receivedValues[i]), 0, 1, 0, MOTOR_POWER_INTERVAL);
-
-                if (receivedValues[i] < 0) {
-                    inputs[i] *= -1;
-                }
-            }
+        // else {
+        //     for (int i = 0; i < sizeof(receivedValues) / sizeof(int16_t); i++) {
+        //         inputs[i] = map(receivedValues[i], 0, 100, MIN_MOTOR_SPEED, MAX_MOTOR_SPEED);
+        //     }
+        // }
+        for (int i = 0; i < sizeof(receivedValues) / sizeof(int16_t); i++) {
+            inputs[i] = map(receivedValues[i], 0, 100, MIN_MOTOR_SPEED, MAX_MOTOR_SPEED);
         }
+
+        // TODO: Setup Control Loop and Input Error Correction
+
+        // Temporal direct override of motor input using only throttle
+        MotorInput1 = inputs[3];
+        MotorInput2 = inputs[3];
+        MotorInput3 = inputs[3];
+        MotorInput4 = inputs[3];
+
+        Serial.print("Received values: ");
+        Serial.print(" Roll: ");
+        Serial.print(inputs[0]);
+        Serial.print(" Pitch: ");
+        Serial.print(inputs[1]);
+        Serial.print(" Yaw: ");
+        Serial.print(inputs[2]);
+        Serial.print(" Throttle: ");
+        Serial.print(inputs[3]);
+        Serial.println();
+
     }
 
-    // TODO: Setup Control Loop and Input Error Correction
-    // MotorInput1 = 0;
-    // MotorInput2 = 0;
-    // MotorInput3 = 0;
-    // MotorInput4 = 0;
-
-    Serial.print("Received values: ");
-    Serial.print(" Roll: ");
-    Serial.print(inputs[0]);
-    Serial.print(" Pitch: ");
-    Serial.print(inputs[1]);
-    Serial.print(" Yaw: ");
-    Serial.print(inputs[2]);
-    Serial.println();
-
-    // // Send speed signal to motors
-    // Motor1.writeMicroseconds(inputs[3]);
-    // Motor2.writeMicroseconds(inputs[3]);
-    // Motor3.writeMicroseconds(inputs[3]);
-    // Motor4.writeMicroseconds(inputs[3]);
+    // Send speed signal to motors
+    Motor1.writeMicroseconds(MotorInput1);
+    Motor2.writeMicroseconds(MotorInput2);
+    Motor3.writeMicroseconds(MotorInput3);
+    Motor4.writeMicroseconds(MotorInput4);
 
     // Setup a 250Hz Closed Control Loop
     delay(400);
