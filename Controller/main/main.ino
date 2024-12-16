@@ -1,21 +1,19 @@
-
 // Controller Code
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
 
 // Setup Joysticks
-#define STICKL_X A0
-#define STICKL_Y A1
+#define STICKL_Y A0
+#define STICKL_X A1
 #define SWL 3
 
-#define STICKR_X A2
-#define STICKR_Y A3
+#define STICKR_Y A2
+#define STICKR_X A3
 #define SWR 2
 
 int StickLXMidPoint, StickRXMidPoint, StickLYMidPoint, StickRYMidPoint;
-
-float PitchInput, RollInput, YawInput, ThrottleInput;
+int16_t PitchInput, RollInput, YawInput, ThrottleInput;
 
 // Setup transmitter
 #define CE_PIN 7
@@ -29,6 +27,12 @@ void setup() {
   // Initialize serial comms
   Serial.begin(9600);
   Serial.println("Starting controller...");
+
+  // Setup Joystick buttons
+  Serial.println("  [!] Initializing joystick buttons...");
+  pinMode(SWL, INPUT_PULLUP);
+  pinMode(SWR, INPUT_PULLUP);
+  Serial.println("   ...joystick buttons initialization done!");
 
   // Initialize transmitter
   Serial.println("  [!] Initializing transmitter...");
@@ -59,15 +63,21 @@ void loop() {
   int swR = digitalRead(SWR);
 
   // Test Joysticks
-  // Serial.print("LX: ");
-  // Serial.print(stickL_X);
-  // Serial.print(" RY: ");
-  // Serial.print(stickL_Y);
-  // Serial.print(" RX: ");
-  // Serial.print(stickR_X);
-  // Serial.print(" RY: ");
-  // Serial.print(stickR_Y);
-  // Serial.println();
+  Serial.print("LX: ");
+  Serial.print(stickL_X);
+  Serial.print(" LY: ");
+  Serial.print(stickL_Y);
+  Serial.print(" RX: ");
+  Serial.print(stickR_X);
+  Serial.print(" RY: ");
+  Serial.print(stickR_Y);
+  Serial.print(" L3: ");
+  // Serial.print(digitalRead(SWL));
+  Serial.print(swL);
+  Serial.print(" R3: ");
+  // Serial.print(digitalRead(SWR));
+  Serial.print(swR);
+  Serial.println();
 
   // RollInput
   if (stickR_X >= StickRXMidPoint) {
@@ -95,20 +105,17 @@ void loop() {
 
   // ThrottleInput
   if (stickL_Y >= StickLYMidPoint) {
-    YawInput = map(stickL_Y, StickLYMidPoint, 1024, 0, 100) / 100;
+    ThrottleInput = map(stickL_Y, StickLYMidPoint, 1024, 0, 100);
   }
   else if (stickL_Y < StickLYMidPoint) {
-    YawInput = -map(stickL_Y, StickLYMidPoint, 0, 0, 100) / 100;
+    ThrottleInput = -map(stickL_Y, StickLYMidPoint, 0, 0, 100);
   }
 
   // Send inputs through nrf24L01
-  float commands[] = { PitchInput, RollInput, YawInput, ThrottleInput };
+  Serial.println(ThrottleInput);
+  int16_t commands[] = { RollInput, PitchInput, YawInput, ThrottleInput };
   Transmitter.write(&commands, sizeof(commands));
 
-
-  // uint16_t inputs[] = { stickL_X, stickL_Y, stickR_X, stickR_Y, (uint16_t)swL, (uint16_t)swR };
-  // transmitter.write(&inputs, sizeof(inputs));
-
   // Send signals in 250Hz 
-  delay(400);
+  delay(4);
 }
